@@ -1,4 +1,4 @@
-gcloud reference:
+Scenario: A microservice in GKE cluster should communicate with a pubsub topic using kubernetes service account, GCP IAM, workload identity and RoleBindings
 
 gcloud container clusters create my-cluster
 Creating my-cluster...done
@@ -7,3 +7,90 @@ kubeconfig entry generated for my-cluster
 
 Enable workload identity on existing gke cluster
 *gcloud container clusters update CLUSTER_NAME --zone us-west1-a --workload-pool=PROJECT_ID.svc.id.goog*
+
+
+Modify an existing node pool to enable GKE_METADATA
+This update succeeds only if Workload Identity is enabled on the cluster. It immediately enables Workload Identity for workloads deployed to the node pool.
+
+list node pools to identify the node-pool name in the cluster
+gcloud container node-pools list --cluster=CLUSTER_NAME --zone us-west1-a --project <PROJECT_ID>
+
+update node pools with workload-metadata
+gcloud container node-pools update CLUSTER_NAME_NODE_POOL_NAME --cluster=CLUSTER_NAME --zone us-west1-a --workload-metadata-from-node=GKE_METADATA
+
+describe an existing node pool to verify the `workloadMetadataConfig`
+gcloud container node-pools describe CLUSTER_NAME_NODE_POOL_NAME --cluster=CLUSTER_NAME --zone us-west1-a
+
+Create Kubernetes service account (KSA), Google service account (GSA), annotate KSA and rolebinding KSA and GSA
+
+Create KSA
+kubectl create serviceaccount --namespace K8S_NAMESPACE KSA_NAME
+
+GSA creation
+gcloud iam service-accounts create GSA_NAME
+
+Rolebinding between GSA and KSA
+gcloud iam service-accounts add-iam-policy-binding --role roles/iam.workloadIdentityUser --member "serviceAccount:PROJECT_ID.svc.id.goog[K8S_NAME_SPACE/KSA]" GSA@PROJECT_ID.iam.gserviceaccount.com
+
+Annotate KSA
+kubectl annotate serviceaccount --namespace NAME_SPACE KSA iam.gke.io/gcp-service-account=GSA@PROJECT_ID.iam.gserviceaccount.com
+
+
+pubsub topic and rolebinding with GSA
+
+Create pubsub topic
+gcloud pubsub topics create TOPIC_NAME
+
+Create a pubsub iam rolebinding
+gcloud pubsub topics add-iam-policy-binding TOPIC_NAME --member=GSA --role = "roles/pubsub.publisher"
+
+
+*******************************
+Terraform refernce:
+Enable “workload identity” in `google_container_cluster` resource
+workload_identity_config {
+    identity_namespace = "${var.google_project}.svc.id.goog"
+}
+
+Now enable workload identity in node pools `google_container_node_pool`.
+workload_metadata_config {
+    node_metadata = "GKE_METADATA_SERVER"
+}
+
+
+
+Binding google service account and K8s service account
+resource "google_service_account_iam_binding" "gsa_ksa_binding" {
+    service_account_id = 
+projects/${var.project}/serviceAccounts/${var.gke_sa_email}"
+    role = "roles/iam.workloadIdentityUser"
+    members = [
+        "serviceAccount:${var.project}.svc.id.goog[flux/flux]",
+        "serviceAccount:${var.project}.svc.id.goog[flux/default]"
+    ]
+}
+
+
+
+annotating k8s service account
+resource “null_resource” “annotate_ksa” {
+triggers = {
+    cluster_ep = “${google_container_cluster.gke_cluster.endpoint}” #kubernetes cluster endpoint
+}
+    provisioner “local-exec” {
+        command = <<EOT
+            gcloud container clusters get-credentials $${K8S_CLUSTER} — zone $${K8S_ZONE} — project $${K8S_PROJECT}
+            kubectl annotate serviceaccount — namespace flux flux iam.gke.io/gcp-service-account=$${GCP_SA_EMAIL}
+            kubectl annotate serviceaccount — namespace flux default iam.gke.io/gcp-service-account=$${GCP_SA_EMAIL}
+        EOT
+        environment = {
+            GCP_SA_EMAIL = “${var.gke_sa_email}”
+            K8S_CLUSTER = 
+${google_container_cluster.gke_cluster.name}”
+            K8S_ZONE = “${var.location}”
+            K8S_PROJECT = “${var.project}”
+        }
+    }
+    depends_on = 
+“google_service_account_iam_binding.gsa_ksa_binding”]
+}
