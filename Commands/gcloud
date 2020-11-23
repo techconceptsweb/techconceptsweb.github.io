@@ -1,5 +1,9 @@
 gcloud reference:
 
+gcloud container clusters create my-cluster
+Creating my-cluster...done
+Fetching cluster endpoint and auth data.
+kubeconfig entry generated for my-cluster
 
 Enable workload identity on existing gke cluster
 *gcloud container clusters update CLUSTER_NAME --zone us-west1-a --workload-pool=PROJECT_ID.svc.id.goog*
