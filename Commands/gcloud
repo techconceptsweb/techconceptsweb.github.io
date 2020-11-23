@@ -1,0 +1,5 @@
+gcloud reference:
+
+
+Enable workload identity on existing gke cluster
+*gcloud container clusters update CLUSTER_NAME --zone us-west1-a --workload-pool=PROJECT_ID.svc.id.goog*
