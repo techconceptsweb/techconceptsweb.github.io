@@ -1,0 +1,23 @@
+Service responsibility maps to a single capability?
+Service owns its data and no other service can access the data directly without going through the service's interface? (sharing of tables by two Microservice not allowed)
+Service offers a well defined API that can be consumed by any consumer, is language agnostic, using standard communication Protocols?
+Service accesses all external data and functionality (external to the microservice) via well defined API provided by another service?
+Service location/address can be changed to anywhere within the Equifax network, even to different cloud providers, without functionally impacting its consumers?
+Services are mostly stateless - State is managed at the client level or through small number of stateful services?
+Service is designed to be deployed on immutable lightweight infrastructure (e.g. containers)?
+Service instances are designed to start and shutdown quickly and gracefully? (10 sec or less)
+Service is designed to handle failure of underlying infrastructure or dependent services?
+Services is desgined to be multi-tenant?
+To avoid hard coded point-to-point service integrations, service leverages Service Mesh (or other like methods) to provide dynamic discover and connectivity to dependencies.
+Service design incluldes considerations to protect itself from the other services? (Resilience, Authentication between services, rate limiting etc)
+Service design enables upgrade to next version without any downtime or impact on its consumers?
+Services follow API versioning guidelines prescribed in API Style Guide?
+Services are designed to use fully automated end to end release process including for the the underlying infrastructure and software components?
+Service and underlying software components, middleware, and Database are compaible with and can follow immutable infrastructure/code approach? i.e. No patching
+Service is designed to be deployed in multiple zones simutaionsly, such that each zone will be servicing a relevent share of the production traffic load. (hot-hot)
+Service design uses multi-zone data stores and keep the data synced in near real time?
+Services are designed to be deployed in multiple regions simutaionsly, such that each zone will be servicing a relevent share of the production traffic load. (hot-hot)
+Service design uses multi-region data stores and keep the data synced in near real time?
+Service design includes triggers to detect zone failures and re-route traffic to other zones.
+Service design includes triggers to detect regional failures and re-route traffic to other regions.
+Service design includes triggers to automatically scale up and down the service
